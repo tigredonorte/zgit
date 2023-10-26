@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source "$(dirname "$0")/helpers/get_prefix.sh"
+source "$(dirname "$0")/helpers/get_children.sh"
+
 display_help() {
     echo "Create a new branch based on the current branch."
     echo "usage zgit branch <slug>"
@@ -17,6 +20,26 @@ branch_exists() {
 
     # Return 0 (true) if a matching branch is found, 1 (false) otherwise
     return $((counter > 0 ? 0 : 1))
+}
+
+get_next_child_number() {
+    local prefix=$1
+    local current_branch=$2
+    local children=$(get_children "$prefix" "$current_branch")
+    local max_child_number=0
+    local child_number
+
+    for child_branch in $children; do
+        # Extract the child number from each child branch name
+        child_number=$(echo "$child_branch" | grep -o -E "$prefix([0-9]+)-" | grep -o -E "[0-9]+")
+        # Update max_child_number if this child_number is greater
+        if ((child_number > max_child_number)); then
+            max_child_number=$child_number
+        fi
+    done
+
+    # Increment max_child_number to get the next child number
+    echo $((max_child_number + 1))
 }
 
 main() {
@@ -39,15 +62,17 @@ main() {
             exit 1
         fi
     else
-        next_branch_name="${current_branch}-1-${slug}"
-        if branch_exists "$current_branch" "$slug"; then
+        prefix=$(get_prefix $current_branch)
+        child_number=$(get_next_child_number $prefix $current_branch)
+        next_branch_name="${prefix}${child_number}-${slug}"
+
+        if branch_exists "${prefix}${child_number}" "$slug"; then
             echo "A branch matching the pattern ${current_branch}-{0..n}-${slug} already exists. Aborting."
             exit 1
         fi
     fi
 
-    git branch "$next_branch_name"
-    git checkout "$next_branch_name"
+    git checkout -B "$next_branch_name"
 }
 
 # If the script is called with a function name, execute that function

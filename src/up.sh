@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(dirname "$0")/helpers/get_parents.sh"
+
 # Function to display usage
 display_help() {
     echo "Usage: zgit up"
@@ -12,18 +14,11 @@ main() {
     # Get the current branch name
     local current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-    # Extract the common prefix from the current branch name
-    local common_prefix=$(echo "$current_branch" | grep -o '^[^-]*-[^-]*')
+    local first_parent=$(get_parent "$current_branch")
 
-    # Get a list of sibling branches
-    local sibling_branches=$(git branch | grep "$common_prefix" | grep -v "$current_branch" | sed 's/^[* ] //')
-
-    # Get the first sibling branch from the list
-    local first_sibling=$(echo "$sibling_branches" | head -n 1)
-
-    if [[ -n "$first_sibling" ]]; then
+    if [[ -n "$first_parent" ]]; then
         # Checkout the first sibling branch
-        git checkout "$first_sibling"
+        git checkout "$first_parent"
     else
         echo "No sibling branches found."
         exit 1

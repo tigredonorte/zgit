@@ -4,11 +4,11 @@ get_parents() {
     local current_branch="$1"
 
     local prefix=$(get_prefix "$current_branch")
-    # Extract the base branch name by removing any sub-branch numbers and slugs
-    local base_branch_name=$(echo "$current_branch" | sed -E 's/([^-]*-[^-]*).*/\1/')
+    local base_branch_name=$(get_parent_prefix "$current_branch")
 
-    # Get a list of parent branches by filtering on the base branch name
-    local parent_branches=$(git branch | grep -E "^  $base_branch_name" | grep -Ev "^  $prefix" | sed 's/^[* ] //')
+    local parent_branches=$(git branch | grep -E "^  $base_branch_name" | grep -v "$prefix" | grep -Ev "$base_branch_name[0-9]+-" | sed 's/^[* ] //')
+
+    children_number=$(echo "$prefix" | sed -E 's/.*-([0-9]+)-$/\1/')
 
     # Append main to the list of parent branches
     parent_branches=$(echo -e "$current_branch\n$parent_branches\nmain")

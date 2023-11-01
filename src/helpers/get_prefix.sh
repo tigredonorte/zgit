@@ -8,3 +8,10 @@ get_prefix() {
     fi
     echo $prefix
 }
+
+get_parent_prefix() {
+    local current_branch="$1"
+    local prefix=$(get_prefix "$current_branch")
+    local parent_prefix=$(echo "$prefix" | sed -E 's/([^-]+-[^-]+-)[0-9]+-$/\1/')
+    echo "$parent_prefix"
+}

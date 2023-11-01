@@ -45,11 +45,15 @@ checkout() {
     # Ensure both branches are up to date
     git fetch
 
-    # Output the matching branches
-    echo "switching from $current_branch to $selected_branch"
-
     # Checkout the selected branch
     git checkout "$selected_branch"
+
+    echo -e "Switched from $current_branch to $selected_branch. \n"
+}
+
+rebase() {
+    local current_branch=$1
+    local selected_branch=$2
 
     # Attempt to rebase the parent branch onto the selected branch
     git rebase "$current_branch"

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source "$(dirname "$0")/helpers/get_children.sh"
+source "$(dirname "$0")/helpers/get_prefix.sh"
+
 display_help() {
     echo "Rebase the current branch and its children on origin/main."
     echo "Options:"
@@ -30,15 +33,22 @@ rebase_branches() {
 }
 
 main() {
-    if [[ "$1" == "--continue" ]]; then
-        git rebase --continue
-    elif [[ "$1" == "--abort" ]]; then
-        git rebase --abort
-    else
-        local current_branch=$(git rev-parse --abbrev-ref HEAD)
-        rebase_branches "$current_branch"
-        git push origin +HEAD
-    fi
+    # if [[ "$1" == "--continue" ]]; then
+    #     git rebase --continue
+    # elif [[ "$1" == "--abort" ]]; then
+    #     git rebase --abort
+    # else
+    #     local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    #     rebase_branches "$current_branch"
+    #     git push origin +HEAD
+    # fi
+
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    local prefix=$(get_prefix "$current_branch")
+    local childrens=$(get_childrens "$prefix" "$current_branch")
+    local children_list=$(echo "$childrens" | tac)
+
+    echo "$children_list"
 }
 
 # If the script is called with a function name, execute that function

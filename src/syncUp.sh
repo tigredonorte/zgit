@@ -1,48 +1,41 @@
 #!/bin/bash
 
+source "$(dirname "$0")/helpers/get_parents.sh"
+
 display_help() {
     echo "Rebase the current branch with the parent branch."
 }
 
-get_parent_branch_name() {
-    local current_branch="$1"
-    local parent_branch
+update_parents() {
+    local parent_list="$1"
+    local previous_branch="origin/main"  # Initialize with origin/main for the first rebase
 
-    # Split the current branch name into its components
-    if [[ $current_branch =~ (.+)-[0-9]+(-.*)?$ ]]; then
-        parent_branch=${BASH_REMATCH[1]}
-    else
-        echo "Invalid branch name format."
-        exit 1
-    fi
+    echo "$parent_list" | while IFS= read -r branch; do
+        git checkout "$branch"
 
-    echo "$parent_branch"
-}
+        # Rebase the current branch with the previous one
+        git rebase "$previous_branch"
 
-update_from_parent() {
-    local current_branch=$(git rev-parse --abbrev-ref HEAD)
-    local parent_branch=$(get_parent_branch_name "$current_branch")
+        # Check the exit status of the rebase command
+        if [[ $? -ne 0 ]]; then
+            echo "Rebase conflicts detected on branch $branch. Resolve the conflicts manually, then continue with git rebase --continue or abort with git rebase --abort."
+            exit 1
+        fi
 
-    # Ensure the parent branch exists
-    if ! git show-ref --verify --quiet refs/heads/"$parent_branch"; then
-        echo "Parent branch $parent_branch does not exist."
-        exit 1
-    fi
-
-    # Fetch the latest changes
-    git fetch origin
-
-    # Merge or rebase the changes from the parent branch
-    # Uncomment one of the following lines based on your preferred method:
-    # git merge --no-ff "$parent_branch"
-    # git rebase "$parent_branch"
+        # Set the previous branch for the next iteration
+        previous_branch="$branch"
+    done <<< "$parent_list"  # Feed the reversed list of branches into the loop
 }
 
 main() {
-    update_from_parent
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    local parent_branches=$(get_parents "$current_branch")
+    local parent_list=$(echo "$parent_branches" | tac)
+    update_parents "$parent_list"
 }
 
 # If the script is called with a function name, execute that function
 if [[ -n $1 ]] && declare -F "$1" > /dev/null; then
     "$@"
 fi
+

@@ -23,8 +23,12 @@ main() {
     # Extract the JIRA task number from the branch name
     local jira_task=$(echo $branch_name | grep -o '[A-Z]\+-[0-9]\+')
 
-    # Add all changes to the staging area
-    git add -A
+    # Check for staged changes
+    local staged_changes=$(git diff --cached --quiet; echo $?)
+    # If there are no staged changes, add all changes to the staging area
+    if [[ "$staged_changes" -eq 0 ]]; then
+        git add -A
+    fi
 
     # Commit the changes
     if [[ -n "$commit_message" ]]; then

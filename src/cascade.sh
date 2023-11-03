@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source "$(dirname "$0")/helpers/get_prefix.sh"
+source "$(dirname "$0")/syncUp.sh"
+
 # Function to display help information
 display_help() {
     echo "Usage: cascade"
@@ -17,20 +20,27 @@ sync_up() {
     while : ; do
         local current_branch=$(git rev-parse --abbrev-ref HEAD)
         [[ "$current_branch" == "main" ]] && break
-        ./src/syncUp.sh
+        update_from_parent
     done
+}
+
+create_slug() {
+    local commit=$1
+    local slug=$(git log --format=%B -n 1 $commit | head -n 1 | awk '{print $1"-"$2"-"$3}')
+    echo $slug
 }
 
 # Function to create branches for each commit on main
 cascade_branches() {
     local commits=$(git log --oneline main | tail -n +2 | awk '{print $1}')
     for commit in $commits; do
-        local commit_msg=$(git log --format=%B -n 1 $commit | head -n 1 | sed 's/ /-/g')
-        local branch_name="cascade-$commit-$commit_msg"
-        git branch "$branch_name" "$commit"
+        local slug=$(create_slug $commit)
+        local prefix=$(get_prefix "cascade")
+        local branch_name="${prefix}$commit-$slug"
+        # git branch "$branch_name" "$commit"
+        echo -e "$branch_name" "$commit \n"
     done
 }
-
 # Main function to coordinate the script execution
 main() {
     if [[ "$1" == "--help" ]]; then
@@ -39,7 +49,7 @@ main() {
     fi
 
     sync_up
-    cascade_branches
+    # cascade_branches
 }
 
 # Call the main function with all script arguments
